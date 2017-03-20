@@ -1,7 +1,15 @@
-from bottle import route, run, template
+from bottle import route, run, template, post, request
 
-@route('/hello/<name>')
-def index(name):
-    return template('<b>Hello {{name}}</b>!', name=name)
+messages = []
+
+@route('/chat', method="GET")
+@route('/chat', method="POST")
+def chat():
+    messages.append(request.query.msg)
+    return messages
 
 run(host='localhost', port=8080)
+
+@route('/')
+def index():
+    return 
