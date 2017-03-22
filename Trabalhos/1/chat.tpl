@@ -13,7 +13,9 @@
 
   <body>
     %for m in msg:
-         {{m}}<br>
+    <div style="word-wrap: break-word">
+      {{m}}
+    </div>
     %end
   </body>
 </html>
