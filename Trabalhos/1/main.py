@@ -20,13 +20,16 @@ def index():
 @post('/client')
 @view('client')
 def renderClient():
-    if request.forms.get('name') == '' or request.forms.get('msg') == '':
-        print('Olá')
-        return dict(error=True)
-    elif request.forms.get('name') != None and request.forms.get('msg') != None:
-        print('Tchaaaau')
-        messages.append(request.forms.get('name') + ': ' + request.forms.get('msg'))
-    return dict(error=False)
+    name = request.forms.getunicode('name')
+    msg = request.forms.getunicode('msg')
+    error = False
+    if name == '' or msg == '':
+        error = True
+    elif name != None and msg != None:
+        messages.append(name + ': ' + msg)
+        print(name + msg)
+    return dict(name=name, error=error)
+
 run(host='localhost', port=8080)
 
 

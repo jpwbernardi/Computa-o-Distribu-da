@@ -15,21 +15,25 @@
     <div class="row">
     <form class="col s12" action="" method="post">
       <div class="row">
-        <div class="input-field col s5">
+        <div class="input-field col s12 m9 l5">
           <i class="material-icons prefix">account_circle</i>
+          %if name != None:
+          <input value="{{name}}"name="name" id="name" type="text" class="validate">
+          %else:
           <input name="name" id="name" type="text" class="validate">
+          %end
           <label for="name">Name</label>
         </div>
       </div>
       <div class="row">
-        <div class="input-field col s5">
+        <div class="input-field col s12 m9 l5">
           <i class="material-icons prefix">mode_edit</i>
           <textarea name="msg" id="msg" class="materialize-textarea"></textarea>
           <label for="msg">Message</label>
         </div>
       </div>
       <div class="row">
-        <div class="col offset-s2">
+        <div class="col offset-m4 offset-s5 offset-l2">
           <button class="btn waves-effect waves-light" type="submit"
                   name="action" style="margin-top: 2em">Submit</button>
         </div>
