@@ -13,7 +13,7 @@
 
   <body>
     <div class="row">
-    <form class="col s12" action="" method="post">
+    <form class="col s12" action="send" method="post">
       <div class="row">
         <div class="input-field col s12 m9 l5">
           <i class="material-icons prefix">account_circle</i>

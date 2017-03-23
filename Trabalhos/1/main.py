@@ -1,4 +1,5 @@
-from bottle import run, get, post, view, request, redirect, route, static_file
+# -*- coding: utf-8 -*-
+from bottle import run, get, post, view, request, redirect, route, static_file, template
 import bottle
 
 messages = []
@@ -10,16 +11,17 @@ def server_static(path):
 @get('/chat')
 @view('chat')
 def chat():
-    return dict(msg=messages)
+    name = request.query.name
+    error = request.query.error
+    return dict(msg=messages, name=name, error=error)
 
 @route('/')
 def index():
     return
 
-@get('/client')
-@post('/client')
-@view('client')
-def renderClient():
+
+@post('/send')
+def sendmsg():
     name = request.forms.getunicode('name')
     msg = request.forms.getunicode('msg')
     error = False
@@ -27,9 +29,12 @@ def renderClient():
         error = True
     elif name != None and msg != None:
         messages.append(name + ': ' + msg)
-        print(name + msg)
-    return dict(name=name, error=error)
+        redirect('chat?name=' + name)
+    if name != None:
+        redirect('chat?name=' + name + '&error=t')
+    else:
+        redirect('chat?error=t')
 
-run(host='localhost', port=8080)
+run(host='localhost', port=8081)
 
 
