@@ -35,12 +35,38 @@ vc = VC('http://localhost:' + sys.argv[1]);
 def server_static(path):
     return static_file(path, root='static')
 
+
+
+def menor(a, b):
+    keys  = list(set(a[2].keys()).union(b[2].keys()))
+    keys.sort()
+    a = tuple(a[2][k] if k in a[2] else 0 for k in keys)
+    b = tuple(b[2][k] if k in b[2] else 0 for k in keys)
+    for i in range(0, len(a) - 1):
+        if a < b: return True
+        if b < a: return False
+    return False
+
+allmsg = []
+
+def ordenar():
+    global allmsg
+    for i in range(1, len(allmsg)):
+        chave = allmsg[i]
+        k = i
+        while k > 0 and menor(chave, allmsg[k - 1]):
+            allmsg[k] = allmsg[k - 1]
+            k -= 1
+            allmsg[k] = chave
+
 @get('/chat')
 @view('chat')
 def chat():
+    global allmsg
     name = request.query.name
-    #print(messages)
-    return dict(msg=list(messages), name=name)
+    allmsg = list(messages)
+    ordenar()
+    return dict(msg=list(allmsg), name=name)
 
 @route('/')
 def index():
@@ -55,7 +81,6 @@ def sendmsg():
     if name != None and msg != None:
         vc.increment()
         a = (name, msg, frozendict(vc.vectorClock))
-        #print(a)
         messages.add(a)
         redirect('chat?name=' + name)
     else:
@@ -102,19 +127,13 @@ def getMessagesFrom(p):
 def attmessage():
     while True:
         time.sleep(1)
-        print("\n\n")
-        print(vc.vectorClock)
-        print("\n\n")
-        N = set([])
         global messages
         for p in peers:
             time.sleep(1)
             m = getMessagesFrom(p)
-            print(m)
             for (n, m, t) in m.difference(messages):
                 vc.update(t)
-                N.add((n, m, t))
-        messages = messages.union(N)
+                messages.add((n, m, t))
 
 t = threading.Thread(target=client)
 t.start()
