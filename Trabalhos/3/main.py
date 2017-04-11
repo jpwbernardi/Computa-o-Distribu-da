@@ -42,7 +42,7 @@ def menor(a, b):
     keys.sort()
     a = tuple(a[2][k] if k in a[2] else 0 for k in keys)
     b = tuple(b[2][k] if k in b[2] else 0 for k in keys)
-    for i in range(0, len(a) - 1):
+    for i in range(0, len(a)):
         if a < b: return True
         if b < a: return False
     return False
