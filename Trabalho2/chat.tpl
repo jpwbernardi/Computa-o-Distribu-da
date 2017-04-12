@@ -40,7 +40,7 @@
       </form>
       <div id="chat" class="col s12 m6">
         <div id="inchat">
-          <h5> Computação Distribuída - Trabalho 1 </h5>
+          <h5> Computação Distribuída - Trabalho 2 </h5>
           <ul>
             %for (n, m) in reversed(msg):
           <li><b>{{n}}</b>: {{m}}</li>

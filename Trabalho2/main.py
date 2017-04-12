@@ -24,7 +24,7 @@ def chat():
 
 @route('/')
 def index():
-    return
+    redirect('chat')
 
 
 @post('/send')

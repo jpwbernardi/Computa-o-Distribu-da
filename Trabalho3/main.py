@@ -36,7 +36,6 @@ def server_static(path):
     return static_file(path, root='static')
 
 
-
 def menor(a, b):
     keys  = list(set(a[2].keys()).union(b[2].keys()))
     keys.sort()
@@ -70,7 +69,7 @@ def chat():
 
 @route('/')
 def index():
-    return
+    redirect('chat')
 
 
 @post('/send')
