@@ -97,6 +97,10 @@ def sendmsg():
 def dora():
     return json.dumps(peers)
 
+@get('/max')
+def maxvc():
+    return json.dumps(vc.vectorClock)
+
 def client():
     global lock
     time.sleep(5)
@@ -133,34 +137,75 @@ def getMessagesFrom(p):
 
 def prepare():
     #Fazemos o inverso: pede para todo mundo "E aí? Vamo fechá?"
+    setpeer = set(peers)
     ack = 0
-    total = len(peers)
-    for p in peers:
+    total = len(setpeer) - 1 #Eu não me conto
+    for p in setpeer:
         link = p + "/time?id=" + sys.argv[1]  + str(vc)
         print(link)
         try:
             r = requests.get(link)
             if r.status_code == 200:
-                if r.text == "ACK":
+                for line in r:
+                    r = line.strip()
+                r = r.decode('utf-8');
+                print(r)
+                if r == "ACK":
                     ack += 1
+                    print("AAAAAAAEEEEEE")
+                else:
+                    vc.increment() #Vamo ve onde incrementar... Aqui parece errado. MUDEM ISSOOO!!!!
         except:
             print("Connection Error")
+    print(">>>>>>>> "+ str(ack) + " >= "+ str(total * 0.75))
+    if (ack >= total * 0.75): #Contatinhos o suficiente
+        accept();
 
 @get('/time')
 def promise():
+    global vc
     dic = parse_qs(request.query_string)
-    #print(dicc)
-    propid = dic['id']
+    #print(dic)
+    propid = dic['id'] #ID é quem mandou o "E aí? Vamo fechá?"
     propvc = ['', '', {}]
     for k, v in dic.items():
         if k == 'id':
             continue
         else:
-            propvc[2][k] = v
+            propvc[2]['http://localhost:' + k] = int(v[0]);
     myvc = ['', '', vc.vectorClock]
-    print(myvc[2]);
-    return "ACK" if menor(myvc, propvc) else "NACK";
-    
+    #print("+++++")
+    #print(myvc);
+    #print("-----")
+    #print(propvc);
+    #print('*****');
+    #return 'ACK';
+    if menor(myvc, propvc):
+        #vc.vectorClock = myvc;
+        return "ACK";
+    else:
+        return "NACK";
+
+def accept():
+    maior = vc.vectorClock
+    for p in peers:
+        #try:
+        pvc = {}
+        obj = {}
+        try:
+            pvc = requests.get(p + "/max")
+        except:
+            print("Connection Error");
+        if pvc == 200:
+            obj = json.loads(pvc)
+        if menor(['', '', maior], ['', '', obj]):
+            maior = pvc;
+        print("++++")
+        print(maior)
+        print("----")
+        print(obj)
+        print("****")
+    print("ASHAIOOO" + str(maior))
 
 def attmessage():
     while True:
