@@ -25,7 +25,10 @@ class VC:
         #return "V%s" % repr(self.vectorClock)
 
     def increment(self):
-        self.vectorClock[self.name] += 1
+        try:
+            self.vectorClock[self.name] += 1
+        except:
+            self.vectorClock[self.name] = 1;
         return self
 
     def update(self, t):
@@ -38,6 +41,8 @@ messages = set([])
 peers = ['http://localhost:' + p for p in sys.argv[2:]]
 lock = threading.Lock()
 vc = VC('http://localhost:' + sys.argv[1]);
+
+lock = 0
 
 @bottle.route('/static/<path:path>')
 def server_static(path):
@@ -125,6 +130,7 @@ def msg():
 
 def getMessagesFrom(p):
     link = p + "/messages"
+    print(">>>>>>>>>>>" + link)
     try:
         r = requests.get(link)
         if r.status_code == 200:
@@ -132,7 +138,7 @@ def getMessagesFrom(p):
             setT = set((a, b, frozendict(t)) for [a,b,t] in obj)
         return setT
     except:
-        print("Connection Error")
+        print("Connection Error5")
     return set([])
 
 def prepare():
@@ -156,7 +162,7 @@ def prepare():
                 else:
                     vc.increment() #Vamo ve onde incrementar... Aqui parece errado. MUDEM ISSOOO!!!!
         except:
-            print("Connection Error")
+            print("Connection Error4")
     print(">>>>>>>> "+ str(ack) + " >= "+ str(total * 0.75))
     if (ack >= total * 0.75): #Contatinhos o suficiente
         accept();
@@ -187,37 +193,82 @@ def promise():
         return "NACK";
 
 def accept():
+    global lock, vc
     maior = vc.vectorClock
     for p in peers:
         #try:
-        pvc = {}
+        pvc = None
         obj = {}
         try:
             pvc = requests.get(p + "/max")
         except:
-            print("Connection Error");
-        if pvc == 200:
-            obj = json.loads(pvc)
+            print("Connection Error3");
+        if pvc == None:
+            continue
+        if pvc.status_code == 200:
+            obj = json.loads(pvc.text)
         if menor(['', '', maior], ['', '', obj]):
-            maior = pvc;
+            maior = obj;
         print("++++")
         print(maior)
         print("----")
         print(obj)
         print("****")
+    while lock == 1:
+        continue
+    lock = 1;
+    vc.vectorClock = maior;
+    lock = 0;
+    vc.increment()
+    for p in peers:
+        try:
+            requests.get(p + '/att?id=' + sys.argv[1])
+        except:
+            print("Connection Error2")
     print("ASHAIOOO" + str(maior))
+
+@get('/att')
+def att():
+    print("VLADIMIR, COMO VC N VIU ANTES O ERRO?")
+    global messages, lock, vc
+    id = request.query.id
+    if id == None:
+        return
+    print(id)
+    mvc = {}
+    try:
+        mvc = requests.get('http://localhost:' + str(id) + '/max');
+    except:
+        print("Connection Error1")
+    print("\n" + str(mvc) + "\n")
+    if mvc.status_code == 200:
+        obj = json.loads(mvc.text)
+        #Hm... Caso esteja vazio, vamos transformar obj em um dict
+        try:
+            obj.keys();
+        except:
+            obj = {}
+            print("Ebaaaaaaaa")
+        try:
+            vc.vectorClock.keys()
+        except:
+            print("\nCagou :)\n")
+        if menor(['', '', vc.vectorClock], ['', '', obj]):
+            while lock == 1:
+                continue
+            lock = 1
+            vc.vectorClock = obj
+            lock = 0
+            m = getMessagesFrom('http://localhost:' + id)
+            for (n, m, t) in m.difference(messages):
+                vc.update(t)
+                messages.add((n, m, t))
+            
 
 def attmessage():
     while True:
         time.sleep(1)
         prepare();
-        global messages
-        for p in peers:
-            time.sleep(1)
-            m = getMessagesFrom(p)
-            for (n, m, t) in m.difference(messages):
-                vc.update(t)
-                messages.add((n, m, t))
 
 t = threading.Thread(target=client)
 t.start()
