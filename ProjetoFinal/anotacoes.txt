@@ -1,0 +1,10 @@
+--Banco de dados: chave valor
+
+
+1º Fila em cada servidor, executa quando tem uma ação de todo servidor. Ordena com vector clock
+
+2º Chord peer-to-peer - Wikipédia
+
+3º Wikipédia - Memória compartilhada
+
+4º Rodadas: 1 de planejamento e 1 de execução

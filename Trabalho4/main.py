@@ -42,7 +42,7 @@ peers = ['http://localhost:' + p for p in sys.argv[2:]]
 lock = threading.Lock()
 vc = VC('http://localhost:' + sys.argv[1]);
 
-lock = 0
+_lock = 0
 
 @bottle.route('/static/<path:path>')
 def server_static(path):
@@ -87,11 +87,16 @@ def index():
 
 @post('/send')
 def sendmsg():
+    global _lock
     name = request.forms.getunicode('name')
     msg = request.forms.getunicode('msg')
     global messages
     if name != None and msg != None:
+        while _lock == 1:
+            continue
+        _lock = 1
         vc.increment()
+        _lock = 0
         a = (name, msg, frozendict(vc.vectorClock))
         messages.add(a)
         redirect('chat?name=' + name)
@@ -104,7 +109,13 @@ def dora():
 
 @get('/max')
 def maxvc():
-    return json.dumps(vc.vectorClock)
+    global _lock
+    while _lock == 1:
+        continue
+    _lock = 1;
+    ret = json.dumps(vc.vectorClock)
+    _lock = 0;
+    return ret
 
 def client():
     global lock
@@ -142,6 +153,7 @@ def getMessagesFrom(p):
     return set([])
 
 def prepare():
+    global _lock
     #Fazemos o inverso: pede para todo mundo "E aí? Vamo fechá?"
     setpeer = set(peers)
     ack = 0
@@ -160,7 +172,11 @@ def prepare():
                     ack += 1
                     print("AAAAAAAEEEEEE")
                 else:
+                    while _lock == 1:
+                        continue
+                    _lock = 1
                     vc.increment() #Vamo ve onde incrementar... Aqui parece errado. MUDEM ISSOOO!!!!
+                    _lock = 0
         except:
             print("Connection Error4")
     print(">>>>>>>> "+ str(ack) + " >= "+ str(total * 0.75))
@@ -193,7 +209,7 @@ def promise():
         return "NACK";
 
 def accept():
-    global lock, vc
+    global _lock, vc
     maior = vc.vectorClock
     for p in peers:
         #try:
@@ -214,12 +230,12 @@ def accept():
         print("----")
         print(obj)
         print("****")
-    while lock == 1:
+    while _lock == 1:
         continue
-    lock = 1;
+    _lock = 1;
     vc.vectorClock = maior;
-    lock = 0;
     vc.increment()
+    _lock = 0;
     for p in peers:
         try:
             requests.get(p + '/att?id=' + sys.argv[1])
@@ -230,18 +246,18 @@ def accept():
 @get('/att')
 def att():
     print("VLADIMIR, COMO VC N VIU ANTES O ERRO?")
-    global messages, lock, vc
+    global messages, _lock, vc
     id = request.query.id
     if id == None:
         return
     print(id)
-    mvc = {}
+    mvc = None
     try:
         mvc = requests.get('http://localhost:' + str(id) + '/max');
     except:
         print("Connection Error1")
     print("\n" + str(mvc) + "\n")
-    if mvc.status_code == 200:
+    if mvc != None and mvc.status_code == 200:
         obj = json.loads(mvc.text)
         #Hm... Caso esteja vazio, vamos transformar obj em um dict
         try:
@@ -254,11 +270,11 @@ def att():
         except:
             print("\nCagou :)\n")
         if menor(['', '', vc.vectorClock], ['', '', obj]):
-            while lock == 1:
+            while _lock == 1:
                 continue
-            lock = 1
+            _lock = 1
             vc.vectorClock = obj
-            lock = 0
+            _lock = 0
             m = getMessagesFrom('http://localhost:' + id)
             for (n, m, t) in m.difference(messages):
                 vc.update(t)
