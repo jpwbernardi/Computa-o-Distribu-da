@@ -1,0 +1,35 @@
+processo 1 - Garante que o algoritmo continue: 
+enquanto Verdadeiro:
+	 se tempoPassadoDesdeUltimaAcao > 1seg:
+	    para todo servidor conhecido:
+	    	 enviar NOP
+
+
+processo 2 - Receber açoes de outros:
+	 para toda açao x recebida de um servidor y:
+	      Atualizo meu vector clock
+	      Guardo x na fila de prioridade y (ordenada pelo vector clock das ações)
+	      Se com essa mensagem recebida, todas as filas de servidores tem pelo menos uma ação:
+	      	 executo a primeira ação de todo servidor
+
+
+processo 3 - Matar um servidor morto:
+enquanto Verdadeiro:
+	 para todo servidor y
+	      se não foi recebida nenhuma ação nos ultimos 5 segundos
+	      	 se os outros servidores dizem que isso é real oficial:
+		    tiro ele da lista de amigos
+
+Definir ações:
+*c <nome> <valor> - Cria/atualiza variavel <nome> com valor <valor> 
+*r <nome>         - Remove variavel <nome>
+*a <nome> <nome1> - Soma o valor atual da variavel <nome> com o valor da variavel <nome1>
+*ai <nome> <valor> - Soma o valor atual da variavel <nome> com o valor <valor>
+
+
+
+
+
+
+
+
