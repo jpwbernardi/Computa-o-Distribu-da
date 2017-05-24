@@ -20,7 +20,7 @@ enquanto Verdadeiro:
 	      	 se os outros servidores dizem que isso é real oficial:
 		    tiro ele da lista de amigos
 
-Definir ações:
+Processo 4 - realizar ação:
 *c <nome> <valor> - Cria/atualiza variavel <nome> com valor <valor> 
 *r <nome>         - Remove variavel <nome>
 *a <nome> <nome1> - Soma o valor atual da variavel <nome> com o valor da variavel <nome1>
