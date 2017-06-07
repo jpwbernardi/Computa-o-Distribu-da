@@ -28,6 +28,14 @@ class VC:
 
 actions = {}
 peers = ['http://localhost:' + p for p in sys.argv[2:]]
+fila = {}
+filaGeral = []
+tempoGeral = [time.time() for p in sys.argv[2:]]
+sendNop = True
+
+for id in sys.argv[1:]:
+    fila[id] = [];
+
 lock = threading.Lock()
 vc = VC('http://localhost:' + sys.argv[1]);
 bd = {}
@@ -62,7 +70,23 @@ def ordenar():
 def index():
     return dict(dados=bd)
 
-def executa(acao, par1, par2):
+def executaGeral():
+    #Temos que pegar lock da fila global!
+    del filaGeral[:]
+    menor = 112345678
+    for f in fila:
+        ordenar(f);
+        menor = len(f) if len(f) < menor;
+    for f in fila:
+        for i in range (0, menor):
+            filaGeral.append(f[i]);
+            del f[i];
+    ordenar(filaGeral);
+    for f in fila:
+        executa(f[0]);
+    #Tirar o lock
+
+def executa((acao, par1, par2)):
     global bd
     if par1 not in bd.keys():
         bd[par1] = 0
@@ -78,6 +102,7 @@ def executa(acao, par1, par2):
 
 @post('/send')
 def send():
+    sendNop = False
     acao = request.forms.getunicode('select')
     par1 = request.forms.getunicode('par1')
     par2 = request.forms.getunicode('par2')
@@ -91,6 +116,7 @@ def send():
     data = {'id': sys.argv[1], 'acao': acao, 'par1': par1, 'par2': par2, 'vc': _vc}
     for p in peers:
         r = requests.post(p + '/addaction', data=data);
+    redirect('/');
 
 @post('/addaction')
 def addaction():
@@ -99,8 +125,36 @@ def addaction():
     par2 = request.forms.getunicode('par2')
     id = request.forms.getunicode('id')
     pvc = request.forms.getunicode('vc')
-    print(pvc)
+    _vc = {}
+    for s in pvc.split('&'):
+        s1 = s.split('*');
+        if (len(s1) > 1):
+            _vc[s1[0]] = s1[1];
+    print(_vc)
+    fila[id].append([(acao, par1, par2), _vc])
+    for f in fila:
+        if len(f) == 0:
+            return;
+    executaGeral();
 
+def nop():
+    while True:
+        time.sleep(1);
+        if (sendNop == True):
+            data = {'select': 5, 'par1': 0, 'par2': 5}
+            requests.post(p + '/send', data=data);
+        sendNop = True;
+
+def eliminarServ():
+    while True:
+        time.sleep(1);
+        for i in range(0, len(tempoGeral)):
+            if time.time() - tempoGeral[i] > 10: #Passou 10 segundos
+                del fila[p];
+                del vc.vectorClock[peers[p]]; #Isso pode causar ações
+                                              #com o mesmo
+                                              #vectorClock?
+                del peers[p]
 @get('/peers')
 def dora():
     return json.dumps(peers)
@@ -109,8 +163,8 @@ def dora():
 def msg():
     return json.dumps([(n, m, dict(t)) for (n, m, t) in messages])
 
-#t = threading.Thread(target=client)
-#t.start()
+t = threading.Thread(target=nop)
+t.start()
 
 #t1 = threading.Thread(target=attmessage)
 #t1.start()

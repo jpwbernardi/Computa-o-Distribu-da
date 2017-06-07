@@ -1,9 +1,19 @@
+OBS: Precisa de locks para sendNop e filas
+
+-----------Feito------------------
+
 processo 1 - Garante que o algoritmo continue: 
 enquanto Verdadeiro:
 	 se tempoPassadoDesdeUltimaAcao > 1seg:
 	    para todo servidor conhecido:
 	    	 enviar NOP
 
+processo 3 - Matar um servidor morto:
+enquanto Verdadeiro:
+	 para todo servidor y
+	      se não foi recebida nenhuma ação nos ultimos 5 segundos
+	      	 se os outros servidores dizem que isso é real oficial:
+		    tiro ele da lista de amigos
 
 processo 2 - Receber açoes de outros:
 	 para toda açao x recebida de um servidor y:
@@ -13,23 +23,9 @@ processo 2 - Receber açoes de outros:
 	      	 executo a primeira ação de todo servidor
 
 
-processo 3 - Matar um servidor morto:
-enquanto Verdadeiro:
-	 para todo servidor y
-	      se não foi recebida nenhuma ação nos ultimos 5 segundos
-	      	 se os outros servidores dizem que isso é real oficial:
-		    tiro ele da lista de amigos
-
 Processo 4 - realizar ação:
 *c <nome> <valor> - Cria/atualiza variavel <nome> com valor <valor> 
 *r <nome>         - Remove variavel <nome>
 *a <nome> <nome1> - Soma o valor atual da variavel <nome> com o valor da variavel <nome1>
 *ai <nome> <valor> - Soma o valor atual da variavel <nome> com o valor <valor>
-
-
-
-
-
-
-
 
