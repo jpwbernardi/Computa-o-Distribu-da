@@ -46,24 +46,30 @@ def server_static(path):
 
 
 def menor(a, b):
-    keys  = list(set(a[2].keys()).union(b[2].keys()))
+    print(">>")
+    print(a)
+    print("<<")
+    print(b)
+    keys  = list(set(a[1].keys()).union(b[1].keys()))
     keys.sort()
-    a = tuple(a[2][k] if k in a[2] else 0 for k in keys)
-    b = tuple(b[2][k] if k in b[2] else 0 for k in keys)
+    a = tuple(a[1][k] if k in a[1] else 0 for k in keys)
+    b = tuple(b[1][k] if k in b[1] else 0 for k in keys)
     for i in range(0, len(a)):
         if a < b: return True
         if b < a: return False
     return False
 
-def ordenar():
-    global allmsg
-    for i in range(1, len(allmsg)):
-        chave = allmsg[i]
+def ordenar(vetor):
+    print("----")
+    print(vetor)
+    print("!!!!")
+    for i in range(1, len(vetor)):
+        chave = vetor[i]
         k = i
-        while k > 0 and menor(chave, allmsg[k - 1]):
-            allmsg[k] = allmsg[k - 1]
+        while k > 0 and menor(chave, vetor[k - 1]):
+            vetor[k] = vetor[k - 1]
             k -= 1
-            allmsg[k] = chave
+            vetor[k] = chave
 
 @get('/')
 @view('index')
@@ -71,22 +77,43 @@ def index():
     return dict(dados=bd)
 
 def executaGeral():
+    global filaGeral
+    print("Nao tem terror")
+    print(fila)
+    print("Não tem ko")
     #Temos que pegar lock da fila global!
     del filaGeral[:]
+    print("1")
     menor = 112345678
     for f in fila:
-        ordenar(f);
-        menor = len(f) if len(f) < menor;
+        print("2")
+        print(fila[f]);
+        print("!@!@!@!@")
+        ordenar(fila[f]);
+        if len(fila[f]) < menor:
+            menor = len(fila[f])
+    print("3")
     for f in fila:
-        for i in range (0, menor):
-            filaGeral.append(f[i]);
-            del f[i];
+        print("*****")
+        print(fila[f])
+        print("*-*-*")
+        filaGeral.append(fila[f][0]);
+        del fila[f][0];
+    print("4")
+    print("Ai")
+    print(filaGeral)
+    print("misericórdia")
     ordenar(filaGeral);
-    for f in fila:
+    print(filaGeral)
+    for f in filaGeral:
         executa(f[0]);
     #Tirar o lock
 
-def executa((acao, par1, par2)):
+def executa(tupla):
+    (acao, par1, par2)
+    acao = tupla[0];
+    par1 = tupla[1];
+    par2 = tupla[2];
     global bd
     if par1 not in bd.keys():
         bd[par1] = 0
@@ -120,6 +147,7 @@ def send():
 
 @post('/addaction')
 def addaction():
+    global fila
     acao = request.forms.getunicode('acao')
     par1 = request.forms.getunicode('par1')
     par2 = request.forms.getunicode('par2')
@@ -132,20 +160,30 @@ def addaction():
             _vc[s1[0]] = s1[1];
     print(_vc)
     fila[id].append([(acao, par1, par2), _vc])
+    print("Olalalalalao")
+    print(fila)
+    print("oalalalalaO")
     for f in fila:
         if len(f) == 0:
             return;
     executaGeral();
 
 def nop():
+    global sendNop
     while True:
         time.sleep(1);
         if (sendNop == True):
-            data = {'select': 5, 'par1': 0, 'par2': 5}
-            requests.post(p + '/send', data=data);
+            data = {'select': 5, 'par1': 0, 'par2': 0}
+            for p in peers:
+                try:
+                    requests.post(p + '/send', data=data);
+                except:
+                    print('Não foi possivel conectar a ' + p);
+            fila[sys.argv[1]].append([(5, 0, 0), vc.vectorClock]);
         sendNop = True;
 
 def eliminarServ():
+    global fila
     while True:
         time.sleep(1);
         for i in range(0, len(tempoGeral)):
