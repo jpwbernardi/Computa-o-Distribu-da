@@ -44,6 +44,18 @@ bd = {}
 def server_static(path):
     return static_file(path, root='static')
 
+_nossolock = 0;
+
+#def getlock():
+#    global _nossolock
+#    while _nossolock == 1:
+#        continue;
+#    _nossolock = 1;
+
+#def unlock():
+#    global _nossolock
+#    _nossolock = 0;
+
 
 def menor(a, b):
     print(">>")
@@ -77,43 +89,46 @@ def index():
     return dict(dados=bd)
 
 def executaGeral():
+    #getlock();
     global filaGeral
-    print("Nao tem terror")
-    print(fila)
-    print("Não tem ko")
+#    print("Nao tem terror")
+#    print(fila)
+#    print("Não tem ko")
     #Temos que pegar lock da fila global!
     del filaGeral[:]
     print("1")
     menor = 112345678
     for f in fila:
         print("2")
-        print(fila[f]);
-        print("!@!@!@!@")
+#        print(fila[f]);
+#        print("!@!@!@!@")
         ordenar(fila[f]);
         if len(fila[f]) < menor:
             menor = len(fila[f])
     print("3")
     for f in fila:
         print("*****")
-        print(fila[f])
+        print(f)
         print("*-*-*")
         filaGeral.append(fila[f][0]);
         del fila[f][0];
     print("4")
-    print("Ai")
-    print(filaGeral)
-    print("misericórdia")
+    #print("Ai")
+    #print(filaGeral)
+    #print("misericórdia")
     ordenar(filaGeral);
-    print(filaGeral)
+    #print(filaGeral)
     for f in filaGeral:
         executa(f[0]);
     #Tirar o lock
+    #unlock();
 
 def executa(tupla):
-    (acao, par1, par2)
     acao = tupla[0];
     par1 = tupla[1];
     par2 = tupla[2];
+    if acao == '5': #nop
+        return;
     global bd
     if par1 not in bd.keys():
         bd[par1] = 0
@@ -125,17 +140,28 @@ def executa(tupla):
         bd[par1] += int(bd[par2])
     elif acao == 'ai':
         bd[par1] += int(par2)
+    print(bd);
     redirect('/')
 
 @post('/send')
 def send():
+    global fila
     sendNop = False
     acao = request.forms.getunicode('select')
     par1 = request.forms.getunicode('par1')
     par2 = request.forms.getunicode('par2')
-    if vc.name not in actions.keys():
-        actions[vc.name] = []
-    actions[vc.name].append((acao, par1, par2, vc.vectorClock))
+    #getlock();
+    if vc.name not in fila.keys():
+        fila[vc.name] = []
+    fila[vc.name].append([(acao, par1, par2), vc.vectorClock])
+    lala = True #Precisamos executar a ação?
+    #unlock();
+    for f in fila:
+        if len(fila[f]) == 0:
+            lala = False
+    if (lala == True):
+        executaGeral();
+
     _vc = ""
     for k in vc.vectorClock.keys():
         _vc += str(k) + "*"+ str(vc.vectorClock[k]) + "&"
@@ -157,21 +183,24 @@ def addaction():
     for s in pvc.split('&'):
         s1 = s.split('*');
         if (len(s1) > 1):
-            _vc[s1[0]] = s1[1];
+            _vc[s1[0]] = int(s1[1]);
     print(_vc)
+    #getlock();
     fila[id].append([(acao, par1, par2), _vc])
     print("Olalalalalao")
     print(fila)
     print("oalalalalaO")
     for f in fila:
-        if len(f) == 0:
+        if len(fila[f]) == 0:
+            #unlock();
             return;
+    #unlock();
     executaGeral();
 
 def nop():
     global sendNop
     while True:
-        time.sleep(1);
+        time.sleep(8);
         if (sendNop == True):
             data = {'select': 5, 'par1': 0, 'par2': 0}
             for p in peers:
@@ -179,13 +208,16 @@ def nop():
                     requests.post(p + '/send', data=data);
                 except:
                     print('Não foi possivel conectar a ' + p);
+            #getlock();
             fila[sys.argv[1]].append([(5, 0, 0), vc.vectorClock]);
+            #unlock();
         sendNop = True;
 
 def eliminarServ():
     global fila
     while True:
-        time.sleep(1);
+        time.sleep(10);
+        getlock()
         for i in range(0, len(tempoGeral)):
             if time.time() - tempoGeral[i] > 10: #Passou 10 segundos
                 del fila[p];
@@ -193,6 +225,9 @@ def eliminarServ():
                                               #com o mesmo
                                               #vectorClock?
                 del peers[p]
+        #unlock();
+
+
 @get('/peers')
 def dora():
     return json.dumps(peers)
