@@ -57,7 +57,7 @@
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <script type="text/javascript" src="static/js/materialize.min.js"></script>
     <script type="text/javascript">
-      /*var auto_refresh = setInterval(function (){ $("#chat").load("/chat #inchat"); }, 1000);*/
+      var auto_refresh = setInterval(function (){ $("#chat").load("/ #inchat"); }, 1000);
     </script>
     <script>
       $(document).ready(function() {

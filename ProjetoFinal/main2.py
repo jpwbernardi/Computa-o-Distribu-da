@@ -24,9 +24,15 @@ def main():
 
     run(host='localhost', port=int(porta))
 
+@bottle.route('/static/<path:path>')
+def server_static(path):
+    return static_file(path, root='static')
+
 @get('/')
 @view('index')
 def index():
+    print(bd);
+    print(acoes)
     return dict(dados=bd)
 
 @post('/send')
@@ -35,7 +41,7 @@ def send():
     acao = request.forms.getunicode('select')
     par1 = request.forms.getunicode('par1')
     par2 = request.forms.getunicode('par2')
-    
+
     #Enviar essa ação para todo mundo
 
     acoes[porta].append((acao, par1, par2));
