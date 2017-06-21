@@ -71,26 +71,28 @@ def index():
     return dict(dados=bd)
 
 @post('/send')
-def sendGetInfo(next):
+def sendGetInfo():
     global sendNop
     sendNop = False
     acao = request.forms.getunicode('select')
     par1 = request.forms.getunicode('par1')
     par2 = request.forms.getunicode('par2')
-    send()
+    send(acao, par1, par2)
+    redirect('/');
 
 
 def send(acao, par1, par2):
     global acoes, vc
-    vc.increment();
     getlock();
+    vc.increment();
     #Enviar essa ação para todo mundo
+    print("Ação: " + str(acao) + "  var1: " + str(par1) + "  var2: " + str(par2));
     _vc = ""
     for k in vc.vectorClock.keys():
         _vc += str(k) + "*"+ str(vc.vectorClock[k]) + "&"
     unlock();
 
-    print(_vc)
+    #print(_vc)
     data = {'id': porta, 'acao': acao, 'par1': par1, 'par2': par2, 'vc': _vc}
     for p in peers:
         try:
@@ -102,8 +104,6 @@ def send(acao, par1, par2):
     getlock();
     acoes[porta].append([(acao, par1, par2), frozendict(vc.vectorClock)]);
     unlock();
-
-    redirect('/');
 
 @post('/addaction')
 def addaction():
@@ -117,7 +117,7 @@ def addaction():
         s1 = s.split('*');
         if (len(s1) > 1):
             _vc[s1[0]] = int(s1[1]);
-    print(_vc)
+    #print(_vc)
     getlock()
     acoes[id].append([(acao, par1, par2), frozendict(_vc)]);
     unlock()
@@ -125,8 +125,8 @@ def addaction():
 def attBD():
     #Vejo se em toda fila de acoes existe pelo menos 1 acao
     while True:
-        print("AttBD");
-        print(bd)
+        #print("AttBD");
+        #print(bd)
         time.sleep(1);
         vazio = False
         getlock()
@@ -135,17 +135,17 @@ def attBD():
                 vazio = True;
         if len(acoes[porta]) == 0:
             vazio = True
-        unlock();
+        unlock()
         if vazio == False:
             executaGeral();
 
 #Ordenação--------------------------------------------------
 
 def menor(a, b):
-    print(">>")
-    print(a)
-    print("<<")
-    print(b)
+#    print(">>")
+#    print(a)
+#    print("<<")
+#    print(b)
     keys  = list(set(a[1].keys()).union(b[1].keys()))
     keys.sort()
     a = tuple(a[1][k] if k in a[1] else 0 for k in keys)
@@ -156,9 +156,9 @@ def menor(a, b):
     return False
 
 def ordena(vetor):
-    print("----")
-    print(vetor)
-    print("!!!!")
+#    print("----")
+#    print(vetor)
+#    print("!!!!")
     for i in range(1, len(vetor)):
         chave = vetor[i]
         k = i
@@ -204,14 +204,13 @@ def executa(tupla):
 def nop():
     global sendNop
     while True:
-        time.sleep(5);
-        if (sendNop == True):
-            #Enviar essa ação para todo mundo
-            send('Nop', 0, 0);
-            getlock();
-            acoes[porta].append([(5, 0, 0), vc.vectorClock]);
-            unlock();
+        getlock()
         sendNop = True;
+        unlock()
+        time.sleep(5);
+        if (sendNop == False):
+            continue;
+        send('Nop', '0', '0');
 
 if __name__ == "__main__":
     main();
