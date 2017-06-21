@@ -44,7 +44,7 @@
       </form>
       <div id="chat" class="col s12 m6">
         <div id="inchat">
-          <h5> Computação Distribuída - Trabalho 3 </h5>
+          <h5> Computação Distribuída - Projeto Final</h5>
           <ul>
            %for k in dados.keys():
           <li><b>{{k}}</b>: {{dados[k]}}</li>

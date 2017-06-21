@@ -6,6 +6,7 @@ import threading
 import requests
 import time
 import sys
+import datetime
 
 class VC:
     def __init__(self, name):
@@ -28,6 +29,8 @@ class VC:
 peers = [p for p in sys.argv[2:]]
 bd = {}
 acoes = {}
+timestmp = {}
+active = {}
 porta = sys.argv[1]
 vc = VC('http://localhost:' + sys.argv[1]);
 
@@ -49,6 +52,8 @@ def main():
     acoes[porta] = [];
     for p in peers:
         acoes[p] = [];
+        timestmp[p] = datetime.datetime.now()
+        active[p] = True
 
     #Responsável por atualizar o banco
     t = threading.Thread(target=attBD)
@@ -56,6 +61,9 @@ def main():
 
     t1 = threading.Thread(target=nop)
     t1.start()
+
+    t2 = threading.Thread(target=kill)
+    t2.start()
 
     run(host='localhost', port=int(porta))
 
@@ -66,8 +74,6 @@ def server_static(path):
 @get('/')
 @view('index')
 def index():
-    #print(bd);
-    #print(acoes)
     return dict(dados=bd)
 
 @post('/send')
@@ -80,13 +86,25 @@ def sendGetInfo():
     send(acao, par1, par2)
     redirect('/');
 
+@get('/vivo')
+def vivo():
+    p = request.query['p'];
+    if p not in timestmp or datetime.datetime.now() - timestmp[p] >= datetime.timedelta(0, 10):
+        return "YES"
+    else:
+        return "NO"
+
+@get('/mata')
+def mata():
+    p = request.query['p'];
+    active[p] = False
 
 def send(acao, par1, par2):
     global acoes, vc
     getlock();
     vc.increment();
     #Enviar essa ação para todo mundo
-    print("Ação: " + str(acao) + "  var1: " + str(par1) + "  var2: " + str(par2));
+    #print("Ação: " + str(acao) + "  var1: " + str(par1) + "  var2: " + str(par2));
     _vc = ""
     for k in vc.vectorClock.keys():
         _vc += str(k) + "*"+ str(vc.vectorClock[k]) + "&"
@@ -95,6 +113,8 @@ def send(acao, par1, par2):
     #print(_vc)
     data = {'id': porta, 'acao': acao, 'par1': par1, 'par2': par2, 'vc': _vc}
     for p in peers:
+        if active[p] == False:
+            continue
         try:
             r = requests.post('http://localhost:' + p + '/addaction', data=data);
         except:
@@ -117,21 +137,21 @@ def addaction():
         s1 = s.split('*');
         if (len(s1) > 1):
             _vc[s1[0]] = int(s1[1]);
-    #print(_vc)
+    
     getlock()
-    acoes[id].append([(acao, par1, par2), frozendict(_vc)]);
+    vc.update(_vc) 
+    timestmp[id] = datetime.datetime.now()
+    acoes[id].append([(acao, par1, par2), frozendict(_vc)])
     unlock()
 
 def attBD():
     #Vejo se em toda fila de acoes existe pelo menos 1 acao
     while True:
-        #print("AttBD");
-        #print(bd)
         time.sleep(1);
         vazio = False
         getlock()
         for p in peers:
-            if len(acoes[p]) == 0:
+            if active[p] == True and len(acoes[p]) == 0:
                 vazio = True;
         if len(acoes[porta]) == 0:
             vazio = True
@@ -142,10 +162,6 @@ def attBD():
 #Ordenação--------------------------------------------------
 
 def menor(a, b):
-#    print(">>")
-#    print(a)
-#    print("<<")
-#    print(b)
     keys  = list(set(a[1].keys()).union(b[1].keys()))
     keys.sort()
     a = tuple(a[1][k] if k in a[1] else 0 for k in keys)
@@ -156,9 +172,6 @@ def menor(a, b):
     return False
 
 def ordena(vetor):
-#    print("----")
-#    print(vetor)
-#    print("!!!!")
     for i in range(1, len(vetor)):
         chave = vetor[i]
         k = i
@@ -175,6 +188,8 @@ def executaGeral():
     fila = [acoes[porta][0]]
     del acoes[porta][0];
     for p in peers:
+        if active[p] == False:
+            continue;
         fila.append(acoes[p][0]); #Adicionar o que tem na minha fila
         del acoes[p][0];
     unlock()
@@ -211,6 +226,42 @@ def nop():
         if (sendNop == False):
             continue;
         send('Nop', '0', '0');
+
+def kill():
+    global active
+    while True:
+        for p in peers:
+            if active[p] == False:
+                continue;
+            cont = -1; tot = 0; #Só para manter diferente
+            time.sleep(10)
+            getlock()
+            i = datetime.datetime.now() - timestmp[p]
+            unlock()
+            if i >= datetime.timedelta(0, 10): #Se fazem 10 segundos
+                                               #desde que o outro
+                                               #servidor enviou alguma
+                                               #mensagem
+                
+                for s in peers:
+                    if active[s] == False:
+                        continue;
+                    cont = 0; tot = 0;
+                    try:
+                        r = requests.get('http://localhost:' + s + '/vivo?p=' + str(p))
+                    except:
+                        print("Connection Error (func kill) | Possivelmente é o servidor morto que será removido")
+                        continue
+                    tot += 1;
+                    if r.text == "YES":
+                        cont += 1;
+                if tot == cont:
+                    active[p] = False
+                    for s in peers:
+                        try:
+                            requests.get('http://localhost:' + s + '/mata?p=' + str(p))
+                        except:
+                            continue;
 
 if __name__ == "__main__":
     main();
